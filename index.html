@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EduDesk">
+<meta name="description" content="Complete teacher management portal">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>EduDesk – Teacher Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff;--surface:#f5f5f4;--border:#e7e7e5;--text:#18181b;--muted:#78716c;
+  --accent:#2563eb;--accent-soft:#eff6ff;--accent-border:#bfdbfe;
+  --green:#16a34a;--green-soft:#f0fdf4;--red:#dc2626;--red-soft:#fef2f2;
+  --yellow:#b45309;--yellow-soft:#fffbeb;
+  --r:10px;--top:52px;--bot:58px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;font-family:'DM Sans',sans-serif,system-ui;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overscroll-behavior:none;}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── INSTALL BANNER ── */
+#install-banner{display:none;position:fixed;bottom:calc(var(--bot) + 10px);left:10px;right:10px;background:var(--accent);color:#fff;border-radius:14px;padding:13px 16px;z-index:500;box-shadow:0 4px 20px rgba(37,99,235,.35);align-items:center;gap:12px;}
+#install-banner.show{display:flex;}
+#install-banner .ib-text{flex:1;font-size:13px;font-weight:500;}
+#install-banner .ib-sub{font-size:11px;opacity:.8;margin-top:1px;}
+
+/* ── OFFLINE BANNER ── */
+#offline-banner{display:none;position:fixed;top:var(--top);left:0;right:0;background:#f59e0b;color:#fff;font-size:12px;font-weight:600;text-align:center;padding:6px;z-index:150;}
+#offline-banner.show{display:block;}
+
+/* ── AUTH ── */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-box{width:100%;max-width:360px;padding:32px 28px;border:1px solid var(--border);border-radius:18px;box-shadow:0 4px 32px rgba(0,0,0,.07);}
+.auth-logo{font-size:23px;font-weight:600;letter-spacing:-.5px;margin-bottom:4px;}
+.auth-logo span{color:var(--accent);}
+.auth-sub{color:var(--muted);font-size:13px;margin-bottom:22px;}
+.auth-tabs{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:18px;}
+.auth-tab{flex:1;padding:9px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);background:var(--surface);transition:.15s;}
+.auth-tab.active{background:#fff;color:var(--text);}
+.field{margin-bottom:12px;}
+label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=number],select,textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+  font-family:inherit;font-size:14px;outline:none;transition:border-color .15s;background:#fff;color:var(--text);
+  -webkit-appearance:none;appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:66px;}
+.err{color:var(--red);font-size:12px;margin-top:5px;min-height:18px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;transition:.15s;text-decoration:none;white-space:nowrap;-webkit-user-select:none;user-select:none;}
+.btn-primary{background:var(--accent);color:#fff;}.btn-primary:active{opacity:.85;}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}.btn-secondary:active{background:var(--border);}
+.btn-full{width:100%;}.btn-sm{padding:5px 10px;font-size:12px;border-radius:7px;}
+.btn-danger{background:var(--red-soft);color:var(--red);border:1px solid #fecaca;}
+.btn-ghost{background:none;border:none;color:var(--muted);font-family:inherit;font-size:12px;cursor:pointer;padding:4px 8px;border-radius:6px;}
+
+/* ── APP SHELL ── */
+#app{display:none;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* ── TOPBAR ── */
+.topbar{height:var(--top);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;background:#fff;flex-shrink:0;z-index:100;}
+.topbar-logo{font-size:17px;font-weight:600;letter-spacing:-.5px;flex:1;}
+.topbar-logo span{color:var(--accent);}
+.hamburger{background:none;border:none;cursor:pointer;padding:8px 6px;border-radius:8px;display:flex;flex-direction:column;gap:4.5px;}
+.hamburger:active{background:var(--surface);}
+.hamburger span{display:block;width:19px;height:2px;background:var(--text);border-radius:2px;}
+
+/* ── DRAWER ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:300;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:265px;background:#fff;z-index:301;transform:translateX(-100%);transition:transform .22s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;border-right:1px solid var(--border);overflow-y:auto;}
+.drawer.open{transform:translateX(0);}
+.drawer-top{padding:18px 14px 10px;border-bottom:1px solid var(--border);}
+.drawer-logo{font-size:18px;font-weight:600;letter-spacing:-.4px;}.drawer-logo span{color:var(--accent);}
+.drawer-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.nav-sec{padding:7px 8px 2px;}
+.nav-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:7px 8px 3px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:.12s;-webkit-user-select:none;user-select:none;}
+.nav-item:active{background:var(--surface);}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:500;}
+.nav-ic{width:25px;height:25px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:13px;background:var(--surface);}
+.nav-item.active .nav-ic{background:var(--accent-soft);}
+.drawer-foot{padding:12px 14px;border-top:1px solid var(--border);margin-top:auto;}
+
+/* ── MAIN SCROLL AREA ── */
+.main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;padding-bottom:calc(var(--bot) + 14px);}
+@media(min-width:700px){.main{padding:22px;padding-bottom:22px;}}
+.page{display:none;max-width:860px;margin:0 auto;}.page.active{display:block;}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{height:var(--bot);background:#fff;border-top:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);}
+@media(min-width:700px){.bottom-nav{display:none;}.main{padding-bottom:14px;}}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;padding:7px 4px;font-size:10px;color:var(--muted);font-weight:500;-webkit-user-select:none;user-select:none;}
+.bn.active{color:var(--accent);}
+.bn-ic{font-size:20px;line-height:1;}
+
+/* ── PAGE HEADER ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:8px;}
+.pt{font-size:17px;font-weight:600;letter-spacing:-.3px;}
+.ps{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px;}
+@media(min-width:450px){.stats{grid-template-columns:repeat(4,1fr);}}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;}
+.stat-n{font-size:26px;font-weight:600;letter-spacing:-1px;}
+.stat-l{font-size:11px;color:var(--muted);margin-top:1px;}
+
+/* ── ACTION GRID ── */
+.act-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;}
+.act-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+@media(min-width:400px){.act-grid{grid-template-columns:repeat(4,1fr);}}
+@media(min-width:580px){.act-grid{grid-template-columns:repeat(6,1fr);}}
+.act-btn{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 6px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:#fff;font-family:inherit;font-size:11px;font-weight:500;color:var(--text);transition:.12s;text-align:center;line-height:1.3;-webkit-user-select:none;user-select:none;}
+.act-btn:active{background:var(--surface);}
+.act-ic{font-size:21px;line-height:1;}
+
+/* ── CARD ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border);}
+.card-ti{font-size:13px;font-weight:600;}
+.card-p{padding:14px;}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:360px;}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border);}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500;}
+.bb{background:var(--accent-soft);color:var(--accent);}
+.bg{background:var(--green-soft);color:var(--green);}
+.by{background:var(--yellow-soft);color:var(--yellow);}
+.br{background:var(--red-soft);color:var(--red);}
+.bgr{background:var(--surface);color:var(--muted);}
+
+/* ── FORM ── */
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── MODAL ── */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:400;align-items:flex-end;justify-content:center;}
+@media(min-width:560px){.mo{align-items:center;}}
+.mo.open{display:flex;}
+.mbox{background:#fff;border-radius:18px 18px 0 0;padding:20px;width:100%;max-height:91vh;overflow-y:auto;box-shadow:0 -4px 40px rgba(0,0,0,.12);}
+@media(min-width:560px){.mbox{border-radius:16px;max-width:480px;max-height:88vh;}}
+.mhand{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 14px;}
+@media(min-width:560px){.mhand{display:none;}}
+.mhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.mti{font-size:15px;font-weight:600;}
+.mcl{background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);padding:2px 6px;}
+.mft{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+
+/* ── FILTER ROW ── */
+.filrow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.filrow select,.filrow input{flex:1;min-width:130px;}
+
+/* ── TODO ── */
+.tadd{display:flex;gap:8px;margin-bottom:10px;}
+.tadd input{flex:1;}
+.ti{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.ti:last-child{border-bottom:none;}
+.tck{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+.tt{flex:1;font-size:13px;}.tt.done{text-decoration:line-through;color:var(--muted);}
+.tm{font-size:11px;color:var(--muted);white-space:nowrap;}
+.tdl{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:0 2px;}
+
+/* ── ROWS ── */
+.srow{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.snm{flex:1;font-size:13px;}
+.scol{width:66px;text-align:center;}
+.scol input{accent-color:var(--accent);width:16px;height:16px;}
+.lhd{display:flex;gap:8px;padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+
+/* ── FILE GRID ── */
+.fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+@media(min-width:460px){.fgrid{grid-template-columns:repeat(3,1fr);}}
+.fcard{border:1px solid var(--border);border-radius:var(--r);padding:12px;background:#fff;}
+.fcic{font-size:26px;margin-bottom:7px;}
+.fcnm{font-size:12px;font-weight:600;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fcmt{font-size:11px;color:var(--muted);margin-bottom:8px;}
+.fcac{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* ── UPLOAD ZONE ── */
+.uzone{border:2px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:.15s;}
+.uzone:active{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
+/* ── SYLLABUS ── */
+.sitem{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.sitem:last-child{border-bottom:none;}
+.stop{flex:1;font-size:13px;}
+
+/* ── TIMETABLE ── */
+.ttwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.ttg{display:grid;grid-template-columns:42px repeat(6,1fr);gap:3px;min-width:360px;}
+.tthead{background:var(--surface);border-radius:5px;padding:5px 3px;text-align:center;font-weight:700;font-size:10px;color:var(--muted);}
+.ttcell{border:1px solid var(--border);border-radius:6px;padding:4px 2px;text-align:center;min-height:40px;cursor:pointer;font-size:10px;background:#fff;display:flex;align-items:center;justify-content:center;transition:.12s;}
+.ttcell:active{background:var(--accent-soft);}
+.ttcell.has{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent);font-weight:600;}
+.tttime{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);font-weight:700;}
+
+/* ── PROGRESS ── */
+.pbar{height:5px;background:var(--border);border-radius:6px;overflow:hidden;margin-top:5px;}
+.pfill{height:100%;background:var(--accent);border-radius:6px;transition:width .3s;}
+
+/* ── NOTICE ── */
+.nitem{padding:11px 14px;border-bottom:1px solid var(--border);}
+.nitem:last-child{border-bottom:none;}
+.ntit{font-size:13px;font-weight:600;margin-bottom:3px;}
+.nbod{font-size:12px;color:var(--muted);}
+.nmet{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:28px 20px;color:var(--muted);}
+.empi{font-size:28px;margin-bottom:7px;}
+
+/* ── SUMMARY ── */
+.sumrow{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;}
+
+/* ── MARKS INPUT ── */
+.minp{width:58px;padding:5px 6px;font-size:13px;text-align:center;border:1px solid var(--border);border-radius:7px;font-family:inherit;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--bot) + 14px);left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;padding:9px 18px;border-radius:30px;z-index:600;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- OFFLINE BANNER -->
+<div id="offline-banner">📵 You are offline — all data is still saved locally</div>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <div>
+    <div class="ib-text">📲 Install EduDesk App</div>
+    <div class="ib-sub">Works offline, no browser needed</div>
+  </div>
+  <button class="btn" style="background:#fff;color:var(--accent);font-weight:600;padding:7px 14px" onclick="installApp()">Install</button>
+  <button class="btn-ghost" style="color:rgba(255,255,255,.7)" onclick="dismissInstall()">✕</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══ AUTH ══ -->
+<div id="auth">
+  <div class="auth-box">
+    <div class="auth-logo">Edu<span>Desk</span></div>
+    <div class="auth-sub">Teacher Management Portal</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" onclick="switchTab('register')">Register</div>
+    </div>
+    <div id="tab-login">
+      <div class="field"><label>Email</label><input type="email" id="l-em" placeholder="you@school.edu" autocomplete="email"></div>
+      <div class="field"><label>Password</label><input type="password" id="l-ps" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In</button>
+      <div class="err" id="l-err"></div>
+    </div>
+    <div id="tab-register" style="display:none">
+      <div class="field"><label>Full Name</label><input type="text" id="r-nm" placeholder="Ms. Priya Sharma"></div>
+      <div class="field"><label>Email</label><input type="email" id="r-em" placeholder="you@school.edu"></div>
+      <div class="field"><label>Password</label><input type="password" id="r-ps" placeholder="Min. 6 characters" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <div class="field"><label>School</label><input type="text" id="r-sc" placeholder="Delhi Public School"></div>
+      <button class="btn btn-primary btn-full" onclick="doRegister()">Create Account</button>
+      <div class="err" id="r-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <button class="hamburger" onclick="openDr()" aria-label="Menu"><span></span><span></span><span></span></button>
+    <div class="topbar-logo">Edu<span>Desk</span></div>
+    <button class="btn btn-secondary btn-sm" onclick="doLogout()">Sign Out</button>
+  </div>
+
+  <div class="overlay" id="ov" onclick="closeDr()"></div>
+  <div class="drawer" id="dr">
+    <div class="drawer-top">
+      <div class="drawer-logo">Edu<span>Desk</span></div>
+      <div class="drawer-meta" id="dr-user"></div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Overview</div>
+      <div class="nav-item active" data-p="dashboard" onclick="go('dashboard')"><span class="nav-ic">🏠</span>Dashboard</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Classes</div>
+      <div class="nav-item" data-p="classes" onclick="go('classes')"><span class="nav-ic">📚</span>My Classes</div>
+      <div class="nav-item" data-p="records" onclick="go('records')"><span class="nav-ic">📋</span>Lecture Records</div>
+      <div class="nav-item" data-p="syllabus" onclick="go('syllabus')"><span class="nav-ic">📖</span>Syllabus Tracker</div>
+      <div class="nav-item" data-p="timetable" onclick="go('timetable')"><span class="nav-ic">📅</span>Timetable</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Exams &amp; Marks</div>
+      <div class="nav-item" data-p="exams" onclick="go('exams')"><span class="nav-ic">📝</span>Exams &amp; Papers</div>
+      <div class="nav-item" data-p="marks" onclick="go('marks')"><span class="nav-ic">📊</span>Marks &amp; Grades</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Students</div>
+      <div class="nav-item" data-p="students" onclick="go('students')"><span class="nav-ic">👥</span>Student Lists</div>
+      <div class="nav-item" data-p="attendance" onclick="go('attendance')"><span class="nav-ic">✔️</span>Attendance</div>
+      <div class="nav-item" data-p="assignments" onclick="go('assignments')"><span class="nav-ic">📌</span>Assignments</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Materials</div>
+      <div class="nav-item" data-p="files" onclick="go('files')"><span class="nav-ic">📁</span>PPTs &amp; PDFs</div>
+      <div class="nav-item" data-p="notices" onclick="go('notices')"><span class="nav-ic">📢</span>Notice Board</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Tools</div>
+      <div class="nav-item" data-p="todo" onclick="go('todo')"><span class="nav-ic">✅</span>To-Do List</div>
+    </div>
+    <div class="drawer-foot">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="dr-ver">EduDesk v1.0 · Offline Ready ✓</div>
+      <button class="btn btn-secondary btn-full btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- MAIN SCROLL -->
+  <div class="main" id="main-scroll">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div style="margin-bottom:14px">
+        <div class="pt" id="d-greet">Welcome 👋</div>
+        <div class="ps" id="d-date"></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-n" id="s-c">0</div><div class="stat-l">Classes</div></div>
+        <div class="stat"><div class="stat-n" id="s-s">0</div><div class="stat-l">Students</div></div>
+        <div class="stat"><div class="stat-n" id="s-f">0</div><div class="stat-l">Files</div></div>
+        <div class="stat"><div class="stat-n" id="s-t">0</div><div class="stat-l">Pending</div></div>
+      </div>
+      <div class="act-lbl">Quick Actions</div>
+      <div class="act-grid">
+        <button class="act-btn" onclick="openM('m-cls')"><span class="act-ic">➕</span>Add Class</button>
+        <button class="act-btn" onclick="openM('m-stu')"><span class="act-ic">👤</span>Add Student</button>
+        <button class="act-btn" onclick="go('attendance')"><span class="act-ic">✔️</span>Attendance</button>
+        <button class="act-btn" onclick="go('marks')"><span class="act-ic">📊</span>Marks</button>
+        <button class="act-btn" onclick="openM('m-upl')"><span class="act-ic">📁</span>Upload</button>
+        <button class="act-btn" onclick="openM('m-exm')"><span class="act-ic">📝</span>Add Exam</button>
+        <button class="act-btn" onclick="go('syllabus')"><span class="act-ic">📖</span>Syllabus</button>
+        <button class="act-btn" onclick="go('todo')"><span class="act-ic">✅</span>To-Do</button>
+        <button class="act-btn" onclick="go('timetable')"><span class="act-ic">📅</span>Timetable</button>
+        <button class="act-btn" onclick="openM('m-ntc')"><span class="act-ic">📢</span>Notice</button>
+        <button class="act-btn" onclick="go('records')"><span class="act-ic">📋</span>Records</button>
+        <button class="act-btn" onclick="openM('m-asn')"><span class="act-ic">📌</span>Assignment</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="card"><div class="card-hd"><div class="card-ti">Classes</div></div><div id="d-cls"></div></div>
+        <div class="card"><div class="card-hd"><div class="card-ti">Tasks</div></div><div id="d-tod"></div></div>
+      </div>
+    </div>
+
+    <!-- CLASSES -->
+    <div id="page-classes" class="page">
+      <div class="ph"><div><div class="pt">My Classes</div><div class="ps">Lecture progress</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-cls')">+ Add</button></div>
+      <div class="filrow"><select id="fc-yr" onchange="renderClasses()"><option value="">All Years</option><option>2025-26</option><option>2024-25</option><option>2023-24</option></select></div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Class</th><th>Subject</th><th>Year</th><th>Lec#</th><th>Last Taught</th><th></th></tr></thead><tbody id="tb-cls"></tbody></table></div></div>
+    </div>
+
+    <!-- RECORDS -->
+    <div id="page-records" class="page">
+      <div class="ph"><div><div class="pt">Lecture Records</div><div class="ps">What was taught</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-rec')">+ Add</button></div>
+      <div class="filrow"><select id="fr-cls" onchange="renderRecords()"><option value="">All Classes</option></select></div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Date</th><th>Class</th><th>Lec</th><th>Topic</th><th>Notes</th></tr></thead><tbody id="tb-rec"></tbody></table></div></div>
+    </div>
+
+    <!-- SYLLABUS -->
+    <div id="page-syllabus" class="page">
+      <div class="ph"><div><div class="pt">Syllabus Tracker</div><div class="ps">Topic completion</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-syl')">+ Topic</button></div>
+      <div class="filrow"><select id="fs-cls" onchange="renderSyl()"><option value="">All Classes</option></select></div>
+      <div class="card" id="syl-pc" style="display:none"><div class="card-hd"><div class="card-ti">Progress</div><span id="syl-pct" class="badge bb">0%</span></div><div class="card-p"><div class="pbar"><div class="pfill" id="syl-bar" style="width:0%"></div></div></div></div>
+      <div class="card"><div id="syl-list"></div></div>
+    </div>
+
+    <!-- TIMETABLE -->
+    <div id="page-timetable" class="page">
+      <div class="ph"><div><div class="pt">Timetable</div><div class="ps">Tap any cell to edit</div></div></div>
+      <div class="card card-p"><div class="ttwrap"><div class="ttg" id="ttg"></div></div><div style="margin-top:8px;font-size:11px;color:var(--muted)">Tap a cell to set the class for that period</div></div>
+    </div>
+
+    <!-- EXAMS -->
+    <div id="page-exams" class="page">
+      <div class="ph"><div><div class="pt">Exams &amp; Papers</div><div class="ps">Papers, practice, unit tests</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-exm')">+ Add</button></div>
+      <div class="filrow">
+        <select id="fe-cls" onchange="renderExams()"><option value="">All Classes</option></select>
+        <select id="fe-typ" onchange="renderExams()"><option value="">All Types</option><option>Main Exam</option><option>Practice</option><option>Unit Test</option><option>Assignment</option></select>
+      </div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Title</th><th>Class</th><th>Type</th><th>Date</th><th>Marks</th><th>File</th></tr></thead><tbody id="tb-exm"></tbody></table></div></div>
+    </div>
+
+    <!-- MARKS -->
+    <div id="page-marks" class="page">
+      <div class="ph"><div><div class="pt">Marks &amp; Grades</div><div class="ps">Enter student scores</div></div></div>
+      <div class="filrow">
+        <select id="fm-cls" onchange="renderMrkExams()"><option value="">Select Class</option></select>
+        <select id="fm-exm" onchange="renderMrks()"><option value="">Select Exam</option></select>
+      </div>
+      <div class="card" id="mrk-sc" style="display:none"><div class="card-hd"><div class="card-ti">Class Summary</div></div><div class="card-p" id="mrk-sum"></div></div>
+      <div class="card"><div class="lhd"><span style="flex:1">Student</span><span class="scol">Marks</span><span class="scol">Grade</span></div><div id="mrk-list"></div></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="saveMrks()">💾 Save Marks</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportMrks()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="page-students" class="page">
+      <div class="ph"><div><div class="pt">Student Lists</div><div class="ps">Manage per class</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-stu')">+ Add</button></div>
+      <div class="filrow"><select id="fst-cls" onchange="renderStudents()"><option value="">All Classes</option></select></div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Roll</th><th>Name</th><th>Class</th><th></th></tr></thead><tbody id="tb-stu"></tbody></table></div></div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div id="page-attendance" class="page">
+      <div class="ph"><div><div class="pt">Attendance</div><div class="ps">Daily register</div></div></div>
+      <div class="filrow">
+        <select id="fa-cls" onchange="renderAtt()"><option value="">Select Class</option></select>
+        <input type="date" id="fa-dt" onchange="renderAtt()">
+      </div>
+      <div class="card" id="att-sc" style="display:none"><div class="card-p" id="att-sum"></div></div>
+      <div class="card"><div class="lhd"><span style="flex:1">Student</span><span class="scol">Present</span><span class="scol">Absent</span></div><div id="att-list"></div></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="saveAtt()">💾 Save</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportAtt()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <!-- ASSIGNMENTS -->
+    <div id="page-assignments" class="page">
+      <div class="ph"><div><div class="pt">Assignments</div><div class="ps">Submission &amp; record tracking</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-asn')">+ New</button></div>
+      <div class="filrow">
+        <select id="fasn-cls" onchange="renderAsnList()"><option value="">Select Class</option></select>
+        <select id="fasn-nm" onchange="renderAsnChk()"><option value="">Select Assignment</option></select>
+      </div>
+      <div class="card"><div class="lhd"><span style="flex:1">Student</span><span class="scol">Submitted</span><span class="scol">Checked</span></div><div id="asn-list"></div></div>
+      <div style="margin-top:10px"><button class="btn btn-secondary btn-sm" onclick="exportAsn()">⬇ Export CSV</button></div>
+    </div>
+
+    <!-- FILES -->
+    <div id="page-files" class="page">
+      <div class="ph"><div><div class="pt">PPTs &amp; PDFs</div><div class="ps">Teaching materials</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-upl')">+ Upload</button></div>
+      <div class="filrow">
+        <select id="ff-cls" onchange="renderFiles()"><option value="">All Classes</option></select>
+        <select id="ff-typ" onchange="renderFiles()"><option value="">All Types</option><option>PPT</option><option>PDF</option><option>Other</option></select>
+      </div>
+      <div class="fgrid" id="fgrid"></div>
+    </div>
+
+    <!-- NOTICES -->
+    <div id="page-notices" class="page">
+      <div class="ph"><div><div class="pt">Notice Board</div><div class="ps">Announcements &amp; reminders</div></div><button class="btn btn-primary btn-sm" onclick="openM('m-ntc')">+ Add</button></div>
+      <div class="card"><div id="ntc-list"></div></div>
+    </div>
+
+    <!-- TODO -->
+    <div id="page-todo" class="page">
+      <div class="ph"><div><div class="pt">To-Do List</div><div class="ps">Personal task tracker</div></div></div>
+      <div class="card card-p" style="margin-bottom:12px">
+        <div class="tadd"><input type="text" id="tod-in" placeholder="Add a task..." onkeydown="if(event.key==='Enter')addTodo()"><button class="btn btn-primary" onclick="addTodo()">Add</button></div>
+        <div class="fr">
+          <div class="field" style="margin:0"><label>Priority</label><select id="tod-pr"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select></div>
+          <div class="field" style="margin:0"><label>Due Date</label><input type="text" id="tod-du" placeholder="e.g. 25 Mar"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:12px"><div class="card-hd"><div class="card-ti">Pending</div><span id="tod-cnt" class="badge bb">0</span></div><div id="tod-list"></div></div>
+      <div class="card"><div class="card-hd"><div class="card-ti">Completed</div></div><div id="tod-done"></div></div>
+    </div>
+
+  </div><!-- /main -->
+
+  <div class="bottom-nav">
+    <div class="bn active" data-p="dashboard" onclick="go('dashboard')"><div class="bn-ic">🏠</div>Home</div>
+    <div class="bn" data-p="classes" onclick="go('classes')"><div class="bn-ic">📚</div>Classes</div>
+    <div class="bn" data-p="students" onclick="go('students')"><div class="bn-ic">👥</div>Students</div>
+    <div class="bn" data-p="attendance" onclick="go('attendance')"><div class="bn-ic">✔️</div>Attend</div>
+    <div class="bn" data-p="todo" onclick="go('todo')"><div class="bn-ic">✅</div>Tasks</div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="mo" id="m-cls"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Add Class</div><button class="mcl" onclick="closeM('m-cls')">×</button></div>
+  <div class="fr"><div class="field"><label>Class / Section</label><input type="text" id="ac-nm" placeholder="10A"></div><div class="field"><label>Subject</label><input type="text" id="ac-sb" placeholder="Mathematics"></div></div>
+  <div class="fr"><div class="field"><label>Academic Year</label><select id="ac-yr"><option>2025-26</option><option>2024-25</option><option>2023-24</option></select></div><div class="field"><label>Lecture No.</label><input type="number" id="ac-lc" value="1"></div></div>
+  <div class="field"><label>Last Taught Topic</label><input type="text" id="ac-tp" placeholder="e.g. Quadratic Equations"></div>
+  <div class="field"><label>Date</label><input type="date" id="ac-dt"></div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-cls')">Cancel</button><button class="btn btn-primary" onclick="addClass()">Save</button></div>
+</div></div>
+
+<div class="mo" id="m-rec"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Add Lecture Record</div><button class="mcl" onclick="closeM('m-rec')">×</button></div>
+  <div class="fr"><div class="field"><label>Date</label><input type="date" id="rc-dt"></div><div class="field"><label>Class</label><select id="rc-cls"></select></div></div>
+  <div class="fr"><div class="field"><label>Lecture No.</label><input type="number" id="rc-lc" placeholder="1"></div><div class="field"><label>Subject</label><input type="text" id="rc-sb"></div></div>
+  <div class="field"><label>Topic Taught</label><input type="text" id="rc-tp" placeholder="Integration by Parts"></div>
+  <div class="field"><label>Notes</label><textarea id="rc-nt" placeholder="Additional notes..."></textarea></div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-rec')">Cancel</button><button class="btn btn-primary" onclick="addRecord()">Save</button></div>
+</div></div>
+
+<div class="mo" id="m-syl"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Add Syllabus Topic</div><button class="mcl" onclick="closeM('m-syl')">×</button></div>
+  <div class="field"><label>Class</label><select id="sl-cls"></select></div>
+  <div class="field"><label>Topic</label><input type="text" id="sl-tp" placeholder="Chapter 3: Polynomials"></div>
+  <div class="field"><label>Status</label><select id="sl-st"><option value="pending">Pending</option><option value="taught">Taught</option><option value="skipped">Skipped</option></select></div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-syl')">Cancel</button><button class="btn btn-primary" onclick="addSyl()">Add</button></div>
+</div></div>
+
+<div class="mo" id="m-exm"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Add Exam / Paper</div><button class="mcl" onclick="closeM('m-exm')">×</button></div>
+  <div class="field"><label>Title</label><input type="text" id="ex-ti" placeholder="Mid-Term 2026"></div>
+  <div class="fr"><div class="field"><label>Class</label><select id="ex-cls"></select></div><div class="field"><label>Type</label><select id="ex-ty"><option>Main Exam</option><option>Practice</option><option>Unit Test</option><option>Assignment</option></select></div></div>
+  <div class="fr"><div class="field"><label>Date</label><input type="date" id="ex-dt"></div><div class="field"><label>Max Marks</label><input type="number" id="ex-mk" placeholder="100"></div></div>
+  <div class="field"><label>Attach PDF</label>
+    <div class="uzone" onclick="document.getElementById('ex-fl').click()">📎 Tap to attach<input type="file" id="ex-fl" accept=".pdf" style="display:none" onchange="prevFile(this,'ex-pv')"></div>
+    <div id="ex-pv" style="margin-top:5px;font-size:12px;color:var(--muted)"></div>
+  </div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-exm')">Cancel</button><button class="btn btn-primary" onclick="addExam()">Save</button></div>
+</div></div>
+
+<div class="mo" id="m-upl"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Upload File</div><button class="mcl" onclick="closeM('m-upl')">×</button></div>
+  <div class="field"><label>Title</label><input type="text" id="uf-ti" placeholder="Chapter 3 Slides"></div>
+  <div class="fr"><div class="field"><label>Class</label><select id="uf-cls"></select></div><div class="field"><label>Type</label><select id="uf-ty"><option>PPT</option><option>PDF</option><option>Other</option></select></div></div>
+  <div class="field"><label>File</label>
+    <div class="uzone" onclick="document.getElementById('uf-fl').click()">📎 Tap to upload<input type="file" id="uf-fl" accept=".pdf,.ppt,.pptx,.doc,.docx" style="display:none" onchange="prevFile(this,'uf-pv')"></div>
+    <div id="uf-pv" style="margin-top:5px;font-size:12px;color:var(--muted)"></div>
+  </div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-upl')">Cancel</button><button class="btn btn-primary" onclick="uploadFile()">Upload</button></div>
+</div></div>
+
+<div class="mo" id="m-stu"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Add Student</div><button class="mcl" onclick="closeM('m-stu')">×</button></div>
+  <div class="fr"><div class="field"><label>Full Name</label><input type="text" id="st-nm" placeholder="Student Name"></div><div class="field"><label>Roll No.</label><input type="text" id="st-rl" placeholder="01"></div></div>
+  <div class="field"><label>Class</label><select id="st-cls"></select></div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-stu')">Cancel</button><button class="btn btn-primary" onclick="addStudent()">Save</button></div>
+</div></div>
+
+<div class="mo" id="m-asn"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">New Assignment</div><button class="mcl" onclick="closeM('m-asn')">×</button></div>
+  <div class="field"><label>Title</label><input type="text" id="as-ti" placeholder="Chapter 5 Exercise"></div>
+  <div class="fr"><div class="field"><label>Class</label><select id="as-cls"></select></div><div class="field"><label>Due Date</label><input type="date" id="as-du"></div></div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-asn')">Cancel</button><button class="btn btn-primary" onclick="addAssignment()">Create</button></div>
+</div></div>
+
+<div class="mo" id="m-ntc"><div class="mbox"><div class="mhand"></div>
+  <div class="mhd"><div class="mti">Add Notice</div><button class="mcl" onclick="closeM('m-ntc')">×</button></div>
+  <div class="field"><label>Title</label><input type="text" id="nt-ti" placeholder="Reminder: Submit registers"></div>
+  <div class="field"><label>Class (optional)</label><select id="nt-cls"><option value="">General</option></select></div>
+  <div class="field"><label>Details</label><textarea id="nt-bd" placeholder="Details..."></textarea></div>
+  <div class="mft"><button class="btn btn-secondary" onclick="closeM('m-ntc')">Cancel</button><button class="btn btn-primary" onclick="addNotice()">Post</button></div>
+</div></div>
+
+<script>
+// ══════════════════════════════════
+// PWA SETUP
+// ══════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(()=>console.log('SW registered'))
+      .catch(e=>console.log('SW failed:',e));
+  });
+}
+
+// Online/offline detection
+window.addEventListener('offline',()=>document.getElementById('offline-banner').classList.add('show'));
+window.addEventListener('online',()=>document.getElementById('offline-banner').classList.remove('show'));
+if(!navigator.onLine)document.getElementById('offline-banner').classList.add('show');
+
+// Install prompt
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  setTimeout(()=>document.getElementById('install-banner').classList.add('show'),2000);
+});
+function installApp(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;dismissInstall();});
+}
+function dismissInstall(){document.getElementById('install-banner').classList.remove('show');}
+window.addEventListener('appinstalled',()=>{dismissInstall();toast('✅ EduDesk installed successfully!');});
+
+// Toast notification
+function toast(msg,dur=2800){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ══════════════════════════════════
+// DATA LAYER — localStorage
+// ══════════════════════════════════
+let U=null;
+const K=k=>`edu_${U}_${k}`;
+const LD=k=>{ try{return JSON.parse(localStorage.getItem(K(k))||'[]');}catch{return[];} };
+const SV=(k,v)=>{ try{localStorage.setItem(K(k),JSON.stringify(v));}catch(e){toast('⚠️ Storage full! Delete some files.');} };
+const LDO=k=>{ try{return JSON.parse(localStorage.getItem(K(k))||'{}');}catch{return{};} };
+
+let classes=[],records=[],syllabus=[],exams=[],marks={},files=[],
+    students=[],attendance={},assignments=[],todos=[],notices=[],timetable={},ufs={};
+
+function loadAll(){
+  classes=LD('cls');records=LD('rec');syllabus=LD('syl');exams=LD('exm');
+  marks=LDO('mrk');files=LD('fil');students=LD('stu');
+  attendance=LDO('att');assignments=LD('asn');todos=LD('tod');
+  notices=LD('ntc');timetable=LDO('tt');ufs=LDO('ufs');
+}
+function saveAll(){
+  SV('cls',classes);SV('rec',records);SV('syl',syllabus);SV('exm',exams);
+  try{localStorage.setItem(K('mrk'),JSON.stringify(marks));}catch{}
+  SV('fil',files);SV('stu',students);
+  try{localStorage.setItem(K('att'),JSON.stringify(attendance));}catch{}
+  SV('asn',assignments);SV('tod',todos);SV('ntc',notices);
+  try{localStorage.setItem(K('tt'),JSON.stringify(timetable));}catch{}
+  try{localStorage.setItem(K('ufs'),JSON.stringify(ufs));}catch{}
+}
+
+// ══════════════════════════════════
+// AUTH
+// ══════════════════════════════════
+function switchTab(t){
+  document.getElementById('tab-login').style.display=t==='login'?'':'none';
+  document.getElementById('tab-register').style.display=t==='register'?'':'none';
+  document.querySelectorAll('.auth-tab').forEach((e,i)=>e.classList.toggle('active',(t==='login'&&i===0)||(t==='register'&&i===1)));
+}
+function getUsers(){try{return JSON.parse(localStorage.getItem('edu_users')||'{}');}catch{return{};}}
+function saveUsers(u){localStorage.setItem('edu_users',JSON.stringify(u));}
+
+function doLogin(){
+  const em=document.getElementById('l-em').value.trim().toLowerCase();
+  const ps=document.getElementById('l-ps').value;
+  const us=getUsers();
+  if(!us[em]||us[em].pass!==ps){document.getElementById('l-err').textContent='Invalid email or password.';return;}
+  document.getElementById('l-err').textContent='';
+  U=em;localStorage.setItem('edu_session',em);bootApp(us[em]);
+}
+function doRegister(){
+  const nm=document.getElementById('r-nm').value.trim();
+  const em=document.getElementById('r-em').value.trim().toLowerCase();
+  const ps=document.getElementById('r-ps').value;
+  const sc=document.getElementById('r-sc').value.trim();
+  if(!nm||!em||!ps){document.getElementById('r-err').textContent='All fields required.';return;}
+  if(ps.length<6){document.getElementById('r-err').textContent='Password must be at least 6 characters.';return;}
+  if(!/\S+@\S+\.\S+/.test(em)){document.getElementById('r-err').textContent='Enter a valid email.';return;}
+  const us=getUsers();
+  if(us[em]){document.getElementById('r-err').textContent='This email is already registered.';return;}
+  us[em]={name:nm,pass:ps,school:sc,created:new Date().toISOString()};
+  saveUsers(us);document.getElementById('r-err').textContent='';
+  U=em;localStorage.setItem('edu_session',em);bootApp(us[em]);
+}
+function doLogout(){
+  localStorage.removeItem('edu_session');U=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth').style.display='flex';
+}
+function bootApp(user){
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('dr-user').textContent=user.name+(user.school?' · '+user.school:'');
+  const h=new Date().getHours();
+  const g=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  document.getElementById('d-greet').textContent=g+', '+user.name.split(' ')[0]+' 👋';
+  document.getElementById('d-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const fdt=document.getElementById('fa-dt');if(fdt)fdt.value=new Date().toISOString().split('T')[0];
+  loadAll();go('dashboard');
+}
+window.onload=()=>{
+  const s=localStorage.getItem('edu_session');
+  if(s){const u=getUsers();if(u[s]){U=s;bootApp(u[s]);return;}}
+  // Show auth
+};
+
+// ══════════════════════════════════
+// DRAWER & NAV
+// ══════════════════════════════════
+function openDr(){document.getElementById('dr').classList.add('open');document.getElementById('ov').classList.add('open');}
+function closeDr(){document.getElementById('dr').classList.remove('open');document.getElementById('ov').classList.remove('open');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.target.classList.remove('open');});
+
+function go(page){
+  closeDr();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('[data-p]').forEach(n=>n.classList.toggle('active',n.dataset.p===page));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('main-scroll').scrollTop=0;
+  popSels();
+  const fns={
+    dashboard:renderDash,classes:renderClasses,records:renderRecords,
+    syllabus:renderSyl,timetable:renderTT,exams:renderExams,
+    marks:()=>{renderMrkExams();renderMrks();},students:renderStudents,
+    attendance:renderAtt,assignments:()=>{renderAsnList();renderAsnChk();},
+    files:renderFiles,notices:renderNotices,todo:renderTodos
+  };
+  fns[page]?.();
+}
+
+// ══════════════════════════════════
+// MODAL
+// ══════════════════════════════════
+function openM(id){popSels();document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+
+const SELS=['rc-cls','ex-cls','uf-cls','st-cls','as-cls','sl-cls','nt-cls','fr-cls','fe-cls','ff-cls','fst-cls','fa-cls','fasn-cls','fm-cls','fs-cls'];
+function popSels(){
+  SELS.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cv=el.value,isF=id.startsWith('f');
+    el.innerHTML=isF?'<option value="">All Classes</option>':id==='nt-cls'?'<option value="">General</option>':'<option value="">Select Class</option>';
+    classes.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' – '+c.sub;el.appendChild(o);});
+    if(cv)el.value=cv;
+  });
+}
+
+// ══════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════
+function renderDash(){
+  document.getElementById('s-c').textContent=classes.length;
+  document.getElementById('s-s').textContent=students.length;
+  document.getElementById('s-f').textContent=files.length;
+  document.getElementById('s-t').textContent=todos.filter(t=>!t.done).length;
+  const dc=document.getElementById('d-cls');
+  dc.innerHTML=!classes.length?`<div class="empty"><div class="empi">📚</div>No classes yet</div>`:
+    classes.slice(0,3).map(c=>`<div class="ti"><span class="badge bb">${c.name}</span><span style="flex:1;font-size:12px;padding:0 6px">${c.sub}</span><span class="badge bgr">Lec ${c.lec}</span></div>`).join('');
+  const p=todos.filter(t=>!t.done).slice(0,3);
+  document.getElementById('d-tod').innerHTML=!p.length?`<div class="empty"><div class="empi">✅</div>All clear!</div>`:
+    p.map(t=>`<div class="ti"><input type="checkbox" class="tck" onchange="toggleTodo('${t.id}')"><span class="tt">${t.text}</span></div>`).join('');
+}
+
+// ══════════════════════════════════
+// CLASSES
+// ══════════════════════════════════
+function addClass(){
+  const nm=document.getElementById('ac-nm').value.trim(),sb=document.getElementById('ac-sb').value.trim();
+  if(!nm||!sb){toast('⚠️ Class name and subject are required');return;}
+  classes.push({id:uid(),name:nm,sub:sb,yr:document.getElementById('ac-yr').value,lec:document.getElementById('ac-lc').value||'1',lastTopic:document.getElementById('ac-tp').value,lastDate:document.getElementById('ac-dt').value});
+  saveAll();closeM('m-cls');clr(['ac-nm','ac-sb','ac-lc','ac-tp','ac-dt']);renderClasses();toast('✅ Class added');
+}
+function renderClasses(){
+  const yr=document.getElementById('fc-yr').value;
+  const f=classes.filter(c=>!yr||c.yr===yr);
+  const tb=document.getElementById('tb-cls');
+  if(!f.length){tb.innerHTML='<tr><td colspan="6" class="empty">No classes found</td></tr>';return;}
+  tb.innerHTML=f.map(c=>`<tr>
+    <td><strong>${c.name}</strong></td><td>${c.sub}</td><td><span class="badge bgr">${c.yr}</span></td>
+    <td><span class="badge bb">${c.lec}</span></td>
+    <td style="font-size:12px">${c.lastDate||'—'}<br><span style="color:var(--muted)">${c.lastTopic||''}</span></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-sm btn-secondary" onclick="updLec('${c.id}')">Update</button>
+      <button class="btn btn-sm btn-danger" onclick="delClass('${c.id}')">Del</button>
+    </td></tr>`).join('');
+}
+function updLec(id){
+  const c=classes.find(x=>x.id===id);
+  const l=prompt('Lecture number:',c.lec);if(l===null)return;
+  const t=prompt('Last topic:',c.lastTopic||'');
+  c.lec=l;c.lastTopic=t;c.lastDate=new Date().toISOString().split('T')[0];
+  saveAll();renderClasses();toast('✅ Updated');
+}
+function delClass(id){if(!confirm('Delete this class? Students in this class will also be removed.'))return;students=students.filter(s=>s.classId!==id);classes=classes.filter(c=>c.id!==id);saveAll();renderClasses();toast('Deleted');}
+
+// ══════════════════════════════════
+// RECORDS
+// ══════════════════════════════════
+document.addEventListener('change',e=>{if(e.target.id==='rc-cls'){const c=classes.find(x=>x.id===e.target.value);if(c)document.getElementById('rc-sb').value=c.sub;}});
+function addRecord(){
+  const cid=document.getElementById('rc-cls').value,top=document.getElementById('rc-tp').value.trim();
+  if(!cid||!top){toast('⚠️ Select a class and enter a topic');return;}
+  records.push({id:uid(),date:document.getElementById('rc-dt').value,classId:cid,sub:document.getElementById('rc-sb').value,lec:document.getElementById('rc-lc').value,topic:top,notes:document.getElementById('rc-nt').value});
+  saveAll();closeM('m-rec');clr(['rc-dt','rc-lc','rc-tp','rc-nt','rc-sb']);renderRecords();toast('✅ Record saved');
+}
+function renderRecords(){
+  const cf=document.getElementById('fr-cls').value;
+  const f=records.filter(r=>!cf||r.classId===cf).slice().reverse();
+  const tb=document.getElementById('tb-rec');
+  if(!f.length){tb.innerHTML='<tr><td colspan="5" class="empty">No records yet</td></tr>';return;}
+  tb.innerHTML=f.map(r=>{const c=classes.find(x=>x.id===r.classId);return`<tr><td>${r.date||'—'}</td><td>${c?c.name:'—'}</td><td><span class="badge bb">${r.lec||'—'}</span></td><td>${r.topic}</td><td style="font-size:12px;color:var(--muted)">${r.notes||'—'}</td></tr>`;}).join('');
+}
+
+// ══════════════════════════════════
+// SYLLABUS
+// ══════════════════════════════════
+function addSyl(){
+  const cid=document.getElementById('sl-cls').value,top=document.getElementById('sl-tp').value.trim();
+  if(!cid||!top){toast('⚠️ Select a class and enter a topic');return;}
+  syllabus.push({id:uid(),classId:cid,topic:top,status:document.getElementById('sl-st').value});
+  saveAll();closeM('m-syl');clr(['sl-tp']);renderSyl();toast('✅ Topic added');
+}
+function renderSyl(){
+  const cf=document.getElementById('fs-cls').value;
+  const f=syllabus.filter(s=>!cf||s.classId===cf);
+  const pc=document.getElementById('syl-pc'),list=document.getElementById('syl-list');
+  if(!f.length){pc.style.display='none';list.innerHTML='<div class="empty"><div class="empi">📖</div>No topics added</div>';return;}
+  const taught=f.filter(s=>s.status==='taught').length,pct=Math.round((taught/f.length)*100);
+  pc.style.display='';document.getElementById('syl-pct').textContent=pct+'%';document.getElementById('syl-bar').style.width=pct+'%';
+  list.innerHTML=f.map(s=>`<div class="sitem">
+    <span class="stop">${s.topic}</span>
+    <select style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;font-family:inherit;" onchange="updSyl('${s.id}',this.value)">
+      <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
+      <option value="taught" ${s.status==='taught'?'selected':''}>✓ Taught</option>
+      <option value="skipped" ${s.status==='skipped'?'selected':''}>Skipped</option>
+    </select>
+    <button class="btn btn-sm btn-danger" onclick="delSyl('${s.id}')">✕</button>
+  </div>`).join('');
+}
+function updSyl(id,val){const s=syllabus.find(x=>x.id===id);if(s){s.status=val;saveAll();renderSyl();}}
+function delSyl(id){syllabus=syllabus.filter(s=>s.id!==id);saveAll();renderSyl();}
+
+// ══════════════════════════════════
+// TIMETABLE
+// ══════════════════════════════════
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat'],PERS=['P1','P2','P3','P4','P5','P6','P7','P8'];
+function renderTT(){
+  let h='<div class="tthead"></div>'+DAYS.map(d=>`<div class="tthead">${d}</div>`).join('');
+  PERS.forEach(p=>{
+    h+=`<div class="tttime">${p}</div>`;
+    DAYS.forEach(d=>{const k=`${d}_${p}`,v=timetable[k]||'';h+=`<div class="ttcell ${v?'has':''}" onclick="editTT('${k}')">${v||'+'}</div>`;});
+  });
+  document.getElementById('ttg').innerHTML=h;
+}
+function editTT(k){const v=prompt('Class/subject (blank to clear):',timetable[k]||'');if(v===null)return;if(v.trim())timetable[k]=v.trim();else delete timetable[k];saveAll();renderTT();}
+
+// ══════════════════════════════════
+// EXAMS
+// ══════════════════════════════════
+function prevFile(inp,pvId){
+  const f=inp.files[0];if(!f)return;
+  const k='f_'+Date.now();
+  const r=new FileReader();
+  r.onload=e=>{ufs[k]={name:f.name,size:f.size,data:e.target.result};try{saveAll();}catch{toast('⚠️ File too large for offline storage');}};
+  r.readAsDataURL(f);
+  inp.dataset.key=k;
+  document.getElementById(pvId).textContent='📎 '+f.name+' ('+Math.round(f.size/1024)+' KB)';
+}
+function addExam(){
+  const cid=document.getElementById('ex-cls').value,ti=document.getElementById('ex-ti').value.trim();
+  if(!ti||!cid){toast('⚠️ Title and class are required');return;}
+  const fk=document.getElementById('ex-fl').dataset.key||null;
+  exams.push({id:uid(),title:ti,classId:cid,type:document.getElementById('ex-ty').value,date:document.getElementById('ex-dt').value,marks:document.getElementById('ex-mk').value,fileKey:fk});
+  saveAll();closeM('m-exm');clr(['ex-ti','ex-dt','ex-mk']);document.getElementById('ex-pv').textContent='';delete document.getElementById('ex-fl').dataset.key;renderExams();toast('✅ Exam added');
+}
+function renderExams(){
+  const cf=document.getElementById('fe-cls').value,tf=document.getElementById('fe-typ').value;
+  const f=exams.filter(e=>(!cf||e.classId===cf)&&(!tf||e.type===tf)).slice().reverse();
+  const tb=document.getElementById('tb-exm');
+  if(!f.length){tb.innerHTML='<tr><td colspan="6" class="empty">No exams yet</td></tr>';return;}
+  const bm={'Main Exam':'br','Practice':'bg','Unit Test':'by','Assignment':'bb'};
+  tb.innerHTML=f.map(e=>{const c=classes.find(x=>x.id===e.classId),fd=e.fileKey&&ufs[e.fileKey];
+    return`<tr><td><strong>${e.title}</strong></td><td>${c?c.name:'—'}</td><td><span class="badge ${bm[e.type]||'bgr'}">${e.type}</span></td><td>${e.date||'—'}</td><td>${e.marks||'—'}</td><td>${fd?`<a href="${fd.data}" download="${fd.name}" class="btn btn-sm btn-secondary">⬇</a>`:'—'}</td></tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════
+// MARKS
+// ══════════════════════════════════
+function grOf(p){if(p>=90)return{g:'A+',c:'bg'};if(p>=80)return{g:'A',c:'bg'};if(p>=70)return{g:'B',c:'bb'};if(p>=60)return{g:'C',c:'bb'};if(p>=45)return{g:'D',c:'by'};return{g:'F',c:'br'};}
+function renderMrkExams(){
+  const cid=document.getElementById('fm-cls').value,sel=document.getElementById('fm-exm'),cv=sel.value;
+  sel.innerHTML='<option value="">Select Exam</option>';
+  exams.filter(e=>!cid||e.classId===cid).forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=e.title;sel.appendChild(o);});
+  if(cv)sel.value=cv;renderMrks();
+}
+function renderMrks(){
+  const cid=document.getElementById('fm-cls').value,eid=document.getElementById('fm-exm').value;
+  const ml=document.getElementById('mrk-list'),sc=document.getElementById('mrk-sc');
+  if(!cid||!eid){ml.innerHTML='<div class="empty"><div class="empi">📊</div>Select class and exam</div>';sc.style.display='none';return;}
+  const exm=exams.find(e=>e.id===eid),maxM=exm?parseInt(exm.marks)||100:100;
+  const cls=students.filter(s=>s.classId===cid);
+  if(!marks[eid])marks[eid]={};
+  ml.innerHTML=cls.length?cls.map(s=>{const m=marks[eid][s.id]||'',pct=m?Math.round((parseInt(m)/maxM)*100):null,gr=pct!==null?grOf(pct):{g:'—',c:'bgr'};
+    return`<div class="srow"><span class="snm">${s.roll?s.roll+'. ':''}${s.name}</span>
+      <span class="scol"><input class="minp" type="number" min="0" max="${maxM}" value="${m}" placeholder="—" onchange="marks['${eid}']['${s.id}']=this.value;updGr('${eid}','${s.id}',${maxM},this.value)"></span>
+      <span class="scol"><span class="badge ${gr.c}" id="mg_${eid}_${s.id}">${gr.g}</span></span>
+    </div>`;
+  }).join(''):`<div class="empty">No students in this class</div>`;
+  updMrkSum(eid,maxM,cls);sc.style.display=cls.length?'':'none';
+}
+function updGr(eid,sid,maxM,val){const p=val?Math.round((parseInt(val)/maxM)*100):null,gr=p!==null?grOf(p):{g:'—',c:'bgr'},el=document.getElementById(`mg_${eid}_${sid}`);if(el){el.textContent=gr.g;el.className='badge '+gr.c;}updMrkSum(eid,maxM,students.filter(s=>s.classId===document.getElementById('fm-cls').value));}
+function updMrkSum(eid,maxM,cls){
+  const ms=document.getElementById('mrk-sum'),vals=cls.map(s=>parseInt(marks[eid]&&marks[eid][s.id])||null).filter(v=>v!==null);
+  if(!vals.length){ms.innerHTML='<span style="color:var(--muted);font-size:13px">Enter marks to see summary</span>';return;}
+  const avg=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+  ms.innerHTML=`<div class="sumrow"><span>Avg: <strong>${avg}/${maxM}</strong></span><span>Highest: <strong>${Math.max(...vals)}</strong></span><span>Lowest: <strong>${Math.min(...vals)}</strong></span><span>Appeared: <strong>${vals.length}/${cls.length}</strong></span></div>`;
+}
+function saveMrks(){saveAll();toast('✅ Marks saved');}
+function exportMrks(){
+  const cid=document.getElementById('fm-cls').value,eid=document.getElementById('fm-exm').value;
+  if(!cid||!eid){toast('Select class and exam first');return;}
+  const exm=exams.find(e=>e.id===eid),maxM=exm?parseInt(exm.marks)||100:100;
+  const cls=students.filter(s=>s.classId===cid);
+  let csv='Roll,Name,Marks,Max,Percentage,Grade\n';
+  cls.forEach(s=>{const m=marks[eid]&&marks[eid][s.id]||'',pct=m?Math.round((parseInt(m)/maxM)*100):'',gr=pct!==''?grOf(pct).g:'';csv+=`${s.roll||''},${s.name},${m},${maxM},${pct?pct+'%':''},${gr}\n`;});
+  dlCSV(csv,(exm?exm.title:'marks').replace(/\s/g,'_')+'_grades.csv');
+}
+
+// ══════════════════════════════════
+// STUDENTS
+// ══════════════════════════════════
+function addStudent(){
+  const nm=document.getElementById('st-nm').value.trim(),cid=document.getElementById('st-cls').value;
+  if(!nm||!cid){toast('⚠️ Name and class are required');return;}
+  students.push({id:uid(),name:nm,roll:document.getElementById('st-rl').value,classId:cid});
+  saveAll();closeM('m-stu');clr(['st-nm','st-rl']);renderStudents();toast('✅ Student added');
+}
+function renderStudents(){
+  const cf=document.getElementById('fst-cls').value,f=students.filter(s=>!cf||s.classId===cf);
+  const tb=document.getElementById('tb-stu');
+  if(!f.length){tb.innerHTML='<tr><td colspan="4" class="empty">No students yet</td></tr>';return;}
+  tb.innerHTML=f.map(s=>{const c=classes.find(x=>x.id===s.classId);return`<tr><td>${s.roll||'—'}</td><td>${s.name}</td><td>${c?c.name:'—'}</td><td><button class="btn btn-sm btn-danger" onclick="delStu('${s.id}')">Remove</button></td></tr>`;}).join('');
+}
+function delStu(id){if(!confirm('Remove student?'))return;students=students.filter(s=>s.id!==id);saveAll();renderStudents();toast('Removed');}
+
+// ══════════════════════════════════
+// ATTENDANCE
+// ══════════════════════════════════
+function renderAtt(){
+  const cid=document.getElementById('fa-cls').value,date=document.getElementById('fa-dt').value;
+  const list=document.getElementById('att-list'),sc=document.getElementById('att-sc');
+  if(!cid){list.innerHTML='<div class="empty"><div class="empi">✔️</div>Select a class first</div>';sc.style.display='none';return;}
+  const cls=students.filter(s=>s.classId===cid),key=`${cid}_${date}`;
+  if(!attendance[key])attendance[key]={};
+  if(!cls.length){list.innerHTML='<div class="empty">No students in this class</div>';sc.style.display='none';return;}
+  list.innerHTML=cls.map(s=>{const cur=attendance[key][s.id]||'P';
+    return`<div class="srow"><span class="snm">${s.roll?s.roll+'. ':''}${s.name}</span>
+      <span class="scol"><input type="checkbox" class="tck" ${cur==='P'?'checked':''} onchange="setAtt('${key}','${s.id}',this.checked?'P':'A')"></span>
+      <span class="scol"><input type="checkbox" class="tck" ${cur==='A'?'checked':''} onchange="setAtt('${key}','${s.id}',this.checked?'A':'P')"></span>
+    </div>`;
+  }).join('');
+  updAttSum(key,cls);sc.style.display='';
+}
+function setAtt(key,sid,val){if(!attendance[key])attendance[key]={};attendance[key][sid]=val;const cid=document.getElementById('fa-cls').value;updAttSum(key,students.filter(s=>s.classId===cid));}
+function updAttSum(key,cls){
+  const pr=cls.filter(s=>(attendance[key]&&attendance[key][s.id]||'P')==='P').length,pct=Math.round((pr/cls.length)*100);
+  document.getElementById('att-sum').innerHTML=`<div class="sumrow"><span>Present: <strong>${pr}/${cls.length}</strong></span><span>Attendance: <strong>${pct}%</strong></span></div><div class="pbar" style="margin-top:8px"><div class="pfill" style="width:${pct}%"></div></div>`;
+}
+function saveAtt(){saveAll();toast('✅ Attendance saved');}
+function exportAtt(){
+  const cid=document.getElementById('fa-cls').value,date=document.getElementById('fa-dt').value;
+  if(!cid){toast('Select a class first');return;}
+  const cls=students.filter(s=>s.classId===cid),key=`${cid}_${date}`;
+  let csv='Date,Roll,Name,Status\n';
+  cls.forEach(s=>{const st=attendance[key]&&attendance[key][s.id]||'P';csv+=`${date},${s.roll||''},${s.name},${st==='P'?'Present':'Absent'}\n`;});
+  dlCSV(csv,'attendance_'+date+'.csv');
+}
+
+// ══════════════════════════════════
+// ASSIGNMENTS
+// ══════════════════════════════════
+function addAssignment(){
+  const cid=document.getElementById('as-cls').value,ti=document.getElementById('as-ti').value.trim();
+  if(!ti||!cid){toast('⚠️ Title and class are required');return;}
+  const cl={};students.filter(s=>s.classId===cid).forEach(s=>{cl[s.id]={sub:false,chk:false};});
+  assignments.push({id:uid(),title:ti,classId:cid,due:document.getElementById('as-du').value,checklist:cl});
+  saveAll();closeM('m-asn');clr(['as-ti','as-du']);renderAsnList();renderAsnChk();toast('✅ Assignment created');
+}
+function renderAsnList(){
+  const cid=document.getElementById('fasn-cls').value,sel=document.getElementById('fasn-nm'),cv=sel.value;
+  sel.innerHTML='<option value="">Select Assignment</option>';
+  assignments.filter(a=>!cid||a.classId===cid).forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.title+(a.due?' ('+a.due+')':'');sel.appendChild(o);});
+  if(cv)sel.value=cv;
+}
+function renderAsnChk(){
+  renderAsnList();
+  const aid=document.getElementById('fasn-nm').value,list=document.getElementById('asn-list');
+  if(!aid){list.innerHTML='<div class="empty"><div class="empi">📌</div>Select an assignment</div>';return;}
+  const asn=assignments.find(a=>a.id===aid);if(!asn)return;
+  const cls=students.filter(s=>s.classId===asn.classId);
+  if(!cls.length){list.innerHTML='<div class="empty">No students in this class</div>';return;}
+  list.innerHTML=cls.map(s=>{const r=asn.checklist[s.id]||{sub:false,chk:false};
+    return`<div class="srow"><span class="snm">${s.roll?s.roll+'. ':''}${s.name}</span>
+      <span class="scol"><input type="checkbox" class="tck" ${r.sub?'checked':''} onchange="updAsn('${aid}','${s.id}','sub',this.checked)"></span>
+      <span class="scol"><input type="checkbox" class="tck" ${r.chk?'checked':''} onchange="updAsn('${aid}','${s.id}','chk',this.checked)"></span>
+    </div>`;
+  }).join('');
+}
+function updAsn(aid,sid,f,val){const a=assignments.find(x=>x.id===aid);if(!a)return;if(!a.checklist[sid])a.checklist[sid]={sub:false,chk:false};a.checklist[sid][f]=val;saveAll();}
+function exportAsn(){
+  const aid=document.getElementById('fasn-nm').value;if(!aid){toast('Select an assignment first');return;}
+  const asn=assignments.find(a=>a.id===aid);if(!asn)return;
+  const cls=students.filter(s=>s.classId===asn.classId);
+  let csv='Roll,Name,Submitted,Checked\n';
+  cls.forEach(s=>{const r=asn.checklist[s.id]||{};csv+=`${s.roll||''},${s.name},${r.sub?'Yes':'No'},${r.chk?'Yes':'No'}\n`;});
+  dlCSV(csv,asn.title.replace(/\s/g,'_')+'.csv');
+}
+
+// ══════════════════════════════════
+// FILES
+// ══════════════════════════════════
+function uploadFile(){
+  const ti=document.getElementById('uf-ti').value.trim();if(!ti){toast('⚠️ Enter a title');return;}
+  const fk=document.getElementById('uf-fl').dataset.key||null;
+  files.push({id:uid(),title:ti,classId:document.getElementById('uf-cls').value,type:document.getElementById('uf-ty').value,fileKey:fk,date:new Date().toLocaleDateString('en-IN')});
+  saveAll();closeM('m-upl');clr(['uf-ti']);document.getElementById('uf-pv').textContent='';delete document.getElementById('uf-fl').dataset.key;renderFiles();toast('✅ File uploaded');
+}
+function renderFiles(){
+  const cf=document.getElementById('ff-cls').value,tf=document.getElementById('ff-typ').value;
+  const f=files.filter(x=>(!cf||x.classId===cf)&&(!tf||x.type===tf)).slice().reverse();
+  const grid=document.getElementById('fgrid');
+  if(!f.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empi">📁</div>No files yet</div>';return;}
+  const ic={PPT:'📊',PDF:'📄',Other:'📎'},bdc={PPT:'by',PDF:'br',Other:'bgr'};
+  grid.innerHTML=f.map(x=>{const c=classes.find(cl=>cl.id===x.classId),fd=x.fileKey&&ufs[x.fileKey];
+    return`<div class="fcard"><div class="fcic">${ic[x.type]||'📎'}</div>
+      <div class="fcnm">${x.title}</div>
+      <div class="fcmt">${c?c.name:'General'} · ${x.date}</div>
+      <span class="badge ${bdc[x.type]||'bgr'}" style="margin-bottom:8px">${x.type}</span>
+      <div class="fcac">
+        ${fd?`<a href="${fd.data}" download="${fd.name}" class="btn btn-sm btn-secondary">⬇ Download</a>`:''}
+        <button class="btn btn-sm btn-danger" onclick="delFile('${x.id}')">Del</button>
+      </div></div>`;
+  }).join('');
+}
+function delFile(id){if(!confirm('Delete file?'))return;files=files.filter(f=>f.id!==id);saveAll();renderFiles();toast('Deleted');}
+
+// ══════════════════════════════════
+// NOTICES
+// ══════════════════════════════════
+function addNotice(){
+  const ti=document.getElementById('nt-ti').value.trim();if(!ti){toast('⚠️ Enter a title');return;}
+  notices.unshift({id:uid(),title:ti,classId:document.getElementById('nt-cls').value,body:document.getElementById('nt-bd').value,date:new Date().toLocaleDateString('en-IN')});
+  saveAll();closeM('m-ntc');clr(['nt-ti','nt-bd']);renderNotices();toast('✅ Notice posted');
+}
+function renderNotices(){
+  const list=document.getElementById('ntc-list');
+  if(!notices.length){list.innerHTML='<div class="empty"><div class="empi">📢</div>No notices yet</div>';return;}
+  list.innerHTML=notices.map(n=>{const c=classes.find(x=>x.id===n.classId);
+    return`<div class="nitem"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div class="ntit">${n.title}</div><button class="btn btn-sm btn-danger" style="flex-shrink:0" onclick="delNotice('${n.id}')">✕</button></div>${n.body?`<div class="nbod">${n.body}</div>`:''}<div class="nmet">${n.date}${c?' · '+c.name:' · General'}</div></div>`;
+  }).join('');
+}
+function delNotice(id){notices=notices.filter(n=>n.id!==id);saveAll();renderNotices();}
+
+// ══════════════════════════════════
+// TODO
+// ══════════════════════════════════
+function addTodo(){
+  const text=document.getElementById('tod-in').value.trim();if(!text)return;
+  todos.push({id:uid(),text,pri:document.getElementById('tod-pr').value,due:document.getElementById('tod-du').value,done:false,created:Date.now()});
+  saveAll();clr(['tod-in','tod-du']);renderTodos();renderDash();
+}
+function toggleTodo(id){const t=todos.find(x=>x.id===id);if(t){t.done=!t.done;saveAll();renderTodos();renderDash();}}
+function delTodo(id){todos=todos.filter(t=>t.id!==id);saveAll();renderTodos();renderDash();}
+function renderTodos(){
+  const pending=todos.filter(t=>!t.done),done=todos.filter(t=>t.done);
+  document.getElementById('tod-cnt').textContent=pending.length;
+  const pb={high:'br',normal:'bb',low:'bgr'};
+  const tl=document.getElementById('tod-list');
+  tl.innerHTML=!pending.length?`<div class="empty" style="padding:16px">All done! 🎉</div>`:
+    pending.map(t=>`<div class="ti"><input type="checkbox" class="tck" onchange="toggleTodo('${t.id}')"><span class="tt">${t.text}</span><span class="badge ${pb[t.pri]||'bgr'}">${t.pri}</span>${t.due?`<span class="tm">${t.due}</span>`:''}<button class="tdl" onclick="delTodo('${t.id}')">✕</button></div>`).join('');
+  const dl=document.getElementById('tod-done');
+  dl.innerHTML=!done.length?`<div style="padding:12px 14px;font-size:13px;color:var(--muted)">No completed tasks</div>`:
+    done.map(t=>`<div class="ti"><input type="checkbox" class="tck" checked onchange="toggleTodo('${t.id}')"><span class="tt done">${t.text}</span><button class="tdl" onclick="delTodo('${t.id}')">✕</button></div>`).join('');
+}
+
+// ══════════════════════════════════
+// HELPERS
+// ══════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+function clr(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
+function dlCSV(content,filename){const blob=new Blob([content],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
+</script>
+</body>
+</html>
