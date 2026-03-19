@@ -232,6 +232,26 @@ tr:last-child td{border-bottom:none;}
 /* ── TOAST ── */
 #toast{position:fixed;bottom:calc(var(--bot) + 14px);left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;padding:9px 18px;border-radius:30px;z-index:600;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── FILE VIEWER ── */
+#viewer-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:700;flex-direction:column;}
+#viewer-modal.open{display:flex;}
+#viewer-bar{height:52px;background:#1a1a1a;display:flex;align-items:center;padding:0 14px;gap:12px;flex-shrink:0;}
+#viewer-title{flex:1;color:#fff;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#viewer-close{background:none;border:none;cursor:pointer;color:#fff;font-size:24px;line-height:1;padding:4px 8px;border-radius:6px;opacity:.8;}
+#viewer-close:active{opacity:1;background:rgba(255,255,255,.1);}
+#viewer-dl{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+#viewer-body{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;position:relative;}
+#viewer-body iframe{width:100%;height:100%;border:none;background:#fff;}
+#viewer-body img{max-width:100%;max-height:100%;object-fit:contain;margin:auto;}
+.viewer-msg{color:#fff;text-align:center;padding:40px 20px;max-width:380px;margin:auto;}
+.viewer-msg .vi{font-size:54px;margin-bottom:14px;}
+.viewer-msg h3{font-size:18px;font-weight:600;margin-bottom:8px;}
+.viewer-msg p{font-size:13px;opacity:.7;line-height:1.6;margin-bottom:20px;}
+#viewer-spin{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;text-align:center;}
+#viewer-spin.show{display:block;}
+.spin{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -602,22 +622,22 @@ function toast(msg,dur=2800){
 }
 
 // ══════════════════════════════════
-// DATA LAYER — localStorage
+// DATA LAYER — localStorage + IndexedDB for files
 // ══════════════════════════════════
 let U=null;
 const K=k=>`edu_${U}_${k}`;
 const LD=k=>{ try{return JSON.parse(localStorage.getItem(K(k))||'[]');}catch{return[];} };
-const SV=(k,v)=>{ try{localStorage.setItem(K(k),JSON.stringify(v));}catch(e){toast('⚠️ Storage full! Delete some files.');} };
+const SV=(k,v)=>{ try{localStorage.setItem(K(k),JSON.stringify(v));}catch(e){toast('⚠️ Storage full! Delete some data.');} };
 const LDO=k=>{ try{return JSON.parse(localStorage.getItem(K(k))||'{}');}catch{return{};} };
 
 let classes=[],records=[],syllabus=[],exams=[],marks={},files=[],
-    students=[],attendance={},assignments=[],todos=[],notices=[],timetable={},ufs={};
+    students=[],attendance={},assignments=[],todos=[],notices=[],timetable={};
 
 function loadAll(){
   classes=LD('cls');records=LD('rec');syllabus=LD('syl');exams=LD('exm');
   marks=LDO('mrk');files=LD('fil');students=LD('stu');
   attendance=LDO('att');assignments=LD('asn');todos=LD('tod');
-  notices=LD('ntc');timetable=LDO('tt');ufs=LDO('ufs');
+  notices=LD('ntc');timetable=LDO('tt');
 }
 function saveAll(){
   SV('cls',classes);SV('rec',records);SV('syl',syllabus);SV('exm',exams);
@@ -626,8 +646,63 @@ function saveAll(){
   try{localStorage.setItem(K('att'),JSON.stringify(attendance));}catch{}
   SV('asn',assignments);SV('tod',todos);SV('ntc',notices);
   try{localStorage.setItem(K('tt'),JSON.stringify(timetable));}catch{}
-  try{localStorage.setItem(K('ufs'),JSON.stringify(ufs));}catch{}
 }
+
+// ══════════════════════════════════
+// INDEXEDDB — Unlimited file storage
+// ══════════════════════════════════
+const IDB_NAME='EduDeskFiles';
+const IDB_VER=1;
+const IDB_STORE='files';
+let idb=null;
+
+function openIDB(){
+  return new Promise((res,rej)=>{
+    if(idb){res(idb);return;}
+    const req=indexedDB.open(IDB_NAME,IDB_VER);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)){
+        db.createObjectStore(IDB_STORE,{keyPath:'key'});
+      }
+    };
+    req.onsuccess=e=>{idb=e.target.result;res(idb);};
+    req.onerror=e=>{console.error('IDB error',e);rej(e);};
+  });
+}
+
+async function idbSave(key,value){
+  const db=await openIDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put({key,value});
+    tx.oncomplete=()=>res(true);
+    tx.onerror=e=>rej(e);
+  });
+}
+
+async function idbGet(key){
+  const db=await openIDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const req=tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess=e=>res(e.target.result?e.target.result.value:null);
+    req.onerror=e=>rej(e);
+  });
+}
+
+async function idbDel(key){
+  const db=await openIDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete=()=>res(true);
+    tx.onerror=e=>rej(e);
+  });
+}
+
+// idbKey scopes file storage per user so multiple teachers don't mix
+function idbKey(k){return`${U}__${k}`;}
 
 // ══════════════════════════════════
 // AUTH
@@ -840,10 +915,16 @@ function editTT(k){const v=prompt('Class/subject (blank to clear):',timetable[k]
 function prevFile(inp,pvId){
   const f=inp.files[0];if(!f)return;
   const k='f_'+Date.now();
-  const r=new FileReader();
-  r.onload=e=>{ufs[k]={name:f.name,size:f.size,data:e.target.result};try{saveAll();}catch{toast('⚠️ File too large for offline storage');}};
-  r.readAsDataURL(f);
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      await idbSave(idbKey(k),{name:f.name,size:f.size,data:e.target.result});
+      toast('📎 File ready: '+f.name);
+    }catch(err){toast('⚠️ Could not save file');}
+  };
+  reader.readAsDataURL(f);
   inp.dataset.key=k;
+  inp.dataset.fname=f.name;
   document.getElementById(pvId).textContent='📎 '+f.name+' ('+Math.round(f.size/1024)+' KB)';
 }
 function addExam(){
@@ -853,15 +934,28 @@ function addExam(){
   exams.push({id:uid(),title:ti,classId:cid,type:document.getElementById('ex-ty').value,date:document.getElementById('ex-dt').value,marks:document.getElementById('ex-mk').value,fileKey:fk});
   saveAll();closeM('m-exm');clr(['ex-ti','ex-dt','ex-mk']);document.getElementById('ex-pv').textContent='';delete document.getElementById('ex-fl').dataset.key;renderExams();toast('✅ Exam added');
 }
-function renderExams(){
+async function renderExams(){
   const cf=document.getElementById('fe-cls').value,tf=document.getElementById('fe-typ').value;
   const f=exams.filter(e=>(!cf||e.classId===cf)&&(!tf||e.type===tf)).slice().reverse();
   const tb=document.getElementById('tb-exm');
   if(!f.length){tb.innerHTML='<tr><td colspan="6" class="empty">No exams yet</td></tr>';return;}
   const bm={'Main Exam':'br','Practice':'bg','Unit Test':'by','Assignment':'bb'};
-  tb.innerHTML=f.map(e=>{const c=classes.find(x=>x.id===e.classId),fd=e.fileKey&&ufs[e.fileKey];
-    return`<tr><td><strong>${e.title}</strong></td><td>${c?c.name:'—'}</td><td><span class="badge ${bm[e.type]||'bgr'}">${e.type}</span></td><td>${e.date||'—'}</td><td>${e.marks||'—'}</td><td>${fd?`<a href="${fd.data}" download="${fd.name}" class="btn btn-sm btn-secondary">⬇</a>`:'—'}</td></tr>`;
+  tb.innerHTML=f.map(e=>{
+    const c=classes.find(x=>x.id===e.classId);
+    return`<tr>
+      <td><strong>${e.title}</strong></td><td>${c?c.name:'—'}</td>
+      <td><span class="badge ${bm[e.type]||'bgr'}">${e.type}</span></td>
+      <td>${e.date||'—'}</td><td>${e.marks||'—'}</td>
+      <td id="exf-${e.id}">${e.fileKey?'<span style="color:var(--muted);font-size:12px">…</span>':'—'}</td>
+    </tr>`;
   }).join('');
+  for(const e of f){
+    if(!e.fileKey)continue;
+    const fd=await idbGet(idbKey(e.fileKey)).catch(()=>null);
+    const cell=document.getElementById('exf-'+e.id);if(!cell)continue;
+    if(fd){cell.innerHTML=`<button class="btn btn-sm btn-secondary" onclick="openViewer('${e.fileKey}','${e.id}')">👁 View</button><a href="${fd.data}" download="${fd.name}" class="btn btn-sm btn-secondary">⬇</a>`;}
+    else{cell.textContent='—';}
+  }
 }
 
 // ══════════════════════════════════
@@ -1003,27 +1097,54 @@ function exportAsn(){
 function uploadFile(){
   const ti=document.getElementById('uf-ti').value.trim();if(!ti){toast('⚠️ Enter a title');return;}
   const fk=document.getElementById('uf-fl').dataset.key||null;
-  files.push({id:uid(),title:ti,classId:document.getElementById('uf-cls').value,type:document.getElementById('uf-ty').value,fileKey:fk,date:new Date().toLocaleDateString('en-IN')});
-  saveAll();closeM('m-upl');clr(['uf-ti']);document.getElementById('uf-pv').textContent='';delete document.getElementById('uf-fl').dataset.key;renderFiles();toast('✅ File uploaded');
+  const fname=document.getElementById('uf-fl').dataset.fname||'';
+  files.push({id:uid(),title:ti,classId:document.getElementById('uf-cls').value,type:document.getElementById('uf-ty').value,fileKey:fk,fileName:fname,date:new Date().toLocaleDateString('en-IN')});
+  saveAll();closeM('m-upl');clr(['uf-ti']);document.getElementById('uf-pv').textContent='';
+  delete document.getElementById('uf-fl').dataset.key;
+  delete document.getElementById('uf-fl').dataset.fname;
+  renderFiles();toast('✅ File uploaded');
 }
-function renderFiles(){
+async function renderFiles(){
   const cf=document.getElementById('ff-cls').value,tf=document.getElementById('ff-typ').value;
   const f=files.filter(x=>(!cf||x.classId===cf)&&(!tf||x.type===tf)).slice().reverse();
   const grid=document.getElementById('fgrid');
   if(!f.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empi">📁</div>No files yet</div>';return;}
   const ic={PPT:'📊',PDF:'📄',Other:'📎'},bdc={PPT:'by',PDF:'br',Other:'bgr'};
-  grid.innerHTML=f.map(x=>{const c=classes.find(cl=>cl.id===x.classId),fd=x.fileKey&&ufs[x.fileKey];
-    return`<div class="fcard"><div class="fcic">${ic[x.type]||'📎'}</div>
+  // Render shells first
+  grid.innerHTML=f.map(x=>{
+    const c=classes.find(cl=>cl.id===x.classId);
+    return`<div class="fcard" id="fc-${x.id}">
+      <div class="fcic">${ic[x.type]||'📎'}</div>
       <div class="fcnm">${x.title}</div>
       <div class="fcmt">${c?c.name:'General'} · ${x.date}</div>
       <span class="badge ${bdc[x.type]||'bgr'}" style="margin-bottom:8px">${x.type}</span>
-      <div class="fcac">
-        ${fd?`<a href="${fd.data}" download="${fd.name}" class="btn btn-sm btn-secondary">⬇ Download</a>`:''}
+      <div class="fcac" id="fca-${x.id}">
+        <span style="font-size:12px;color:var(--muted)">${x.fileKey?'Loading…':''}</span>
         <button class="btn btn-sm btn-danger" onclick="delFile('${x.id}')">Del</button>
-      </div></div>`;
+      </div>
+    </div>`;
   }).join('');
+  // Async load action buttons
+  for(const x of f){
+    if(!x.fileKey)continue;
+    const fd=await idbGet(idbKey(x.fileKey)).catch(()=>null);
+    const acts=document.getElementById('fca-'+x.id);if(!acts)continue;
+    if(fd){
+      const viewBtn=x.type==='PDF'
+        ?`<button class="btn btn-sm btn-secondary" onclick="openViewer('${x.fileKey}','${x.id}')">👁 Open PDF</button>`
+        :`<button class="btn btn-sm btn-secondary" onclick="openViewer('${x.fileKey}','${x.id}')">👁 View</button>`;
+      acts.innerHTML=viewBtn+`<a href="${fd.data}" download="${fd.name}" class="btn btn-sm btn-secondary">⬇</a><button class="btn btn-sm btn-danger" onclick="delFile('${x.id}')">Del</button>`;
+    }else{
+      acts.innerHTML=`<span style="font-size:11px;color:var(--muted)">No file</span><button class="btn btn-sm btn-danger" onclick="delFile('${x.id}')">Del</button>`;
+    }
+  }
 }
-function delFile(id){if(!confirm('Delete file?'))return;files=files.filter(f=>f.id!==id);saveAll();renderFiles();toast('Deleted');}
+async function delFile(id){
+  if(!confirm('Delete file?'))return;
+  const f=files.find(x=>x.id===id);
+  if(f&&f.fileKey)await idbDel(idbKey(f.fileKey)).catch(()=>{});
+  files=files.filter(x=>x.id!==id);saveAll();renderFiles();toast('Deleted');
+}
 
 // ══════════════════════════════════
 // NOTICES
@@ -1064,6 +1185,98 @@ function renderTodos(){
     done.map(t=>`<div class="ti"><input type="checkbox" class="tck" checked onchange="toggleTodo('${t.id}')"><span class="tt done">${t.text}</span><button class="tdl" onclick="delTodo('${t.id}')">✕</button></div>`).join('');
 }
 
+
+// ══════════════════════════════════
+// FILE VIEWER — open PDF/PPT/images inline
+// ══════════════════════════════════
+let viewerObjectURL = null;
+
+async function openViewer(fileKey, itemId){
+  const modal = document.getElementById('viewer-modal');
+  const body  = document.getElementById('viewer-body');
+  const spin  = document.getElementById('viewer-spin');
+  const title = document.getElementById('viewer-title');
+  const dlBtn = document.getElementById('viewer-dl');
+
+  // Clear previous content
+  body.querySelectorAll('iframe,img,.viewer-msg').forEach(el=>el.remove());
+  if(viewerObjectURL){URL.revokeObjectURL(viewerObjectURL);viewerObjectURL=null;}
+  spin.classList.add('show');
+  modal.classList.add('open');
+  document.body.style.overflow='hidden';
+
+  try{
+    const fd = await idbGet(idbKey(fileKey));
+    spin.classList.remove('show');
+
+    if(!fd){
+      body.innerHTML='<div class="viewer-msg"><div class="vi">⚠️</div><h3>File not found</h3><p>This file may have been deleted from storage.</p></div>';
+      return;
+    }
+
+    title.textContent = fd.name;
+    dlBtn.href = fd.data;
+    dlBtn.download = fd.name;
+
+    const ext = fd.name.split('.').pop().toLowerCase();
+
+    if(ext === 'pdf'){
+      // PDF — embed in iframe using base64 data URL directly
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText='width:100%;height:100%;border:none;';
+      iframe.src = fd.data;
+      body.appendChild(iframe);
+
+    } else if(['jpg','jpeg','png','gif','webp','svg'].includes(ext)){
+      // Image — show directly
+      const img = document.createElement('img');
+      img.src = fd.data;
+      img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;margin:auto;display:block;padding:10px;';
+      body.appendChild(img);
+
+    } else if(['ppt','pptx'].includes(ext)){
+      // PPT — cannot display in browser, show download prompt
+      body.innerHTML=`<div class="viewer-msg">
+        <div class="vi">📊</div>
+        <h3>${fd.name}</h3>
+        <p>PowerPoint files cannot be displayed directly in the browser. Download the file to open it in Microsoft PowerPoint or Google Slides.</p>
+        <a href="${fd.data}" download="${fd.name}" class="btn btn-primary" style="display:inline-flex">⬇ Download & Open</a>
+      </div>`;
+
+    } else if(['doc','docx'].includes(ext)){
+      body.innerHTML=`<div class="viewer-msg">
+        <div class="vi">📝</div>
+        <h3>${fd.name}</h3>
+        <p>Word documents cannot be previewed here. Download to open in Microsoft Word or Google Docs.</p>
+        <a href="${fd.data}" download="${fd.name}" class="btn btn-primary" style="display:inline-flex">⬇ Download & Open</a>
+      </div>`;
+
+    } else {
+      body.innerHTML=`<div class="viewer-msg">
+        <div class="vi">📎</div>
+        <h3>${fd.name}</h3>
+        <p>This file type cannot be previewed. Download it to open on your device.</p>
+        <a href="${fd.data}" download="${fd.name}" class="btn btn-primary" style="display:inline-flex">⬇ Download File</a>
+      </div>`;
+    }
+
+  } catch(err){
+    spin.classList.remove('show');
+    body.innerHTML='<div class="viewer-msg"><div class="vi">❌</div><h3>Error loading file</h3><p>'+err.message+'</p></div>';
+  }
+}
+
+function closeViewer(){
+  document.getElementById('viewer-modal').classList.remove('open');
+  document.body.style.overflow='';
+  const body=document.getElementById('viewer-body');
+  body.querySelectorAll('iframe,img,.viewer-msg').forEach(el=>el.remove());
+  if(viewerObjectURL){URL.revokeObjectURL(viewerObjectURL);viewerObjectURL=null;}
+}
+
+// Close viewer on Escape key
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeViewer();});
+
 // ══════════════════════════════════
 // HELPERS
 // ══════════════════════════════════
@@ -1071,5 +1284,18 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).substr(
 function clr(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});}
 function dlCSV(content,filename){const blob=new Blob([content],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
 </script>
+
+<!-- FILE VIEWER MODAL -->
+<div id="viewer-modal">
+  <div id="viewer-bar">
+    <button id="viewer-close" onclick="closeViewer()">×</button>
+    <div id="viewer-title">Document</div>
+    <a id="viewer-dl" href="#" download="">⬇ Download</a>
+  </div>
+  <div id="viewer-body">
+    <div id="viewer-spin"><div class="spin"></div>Loading file…</div>
+  </div>
+</div>
+
 </body>
 </html>
